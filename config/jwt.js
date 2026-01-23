@@ -1,0 +1,3 @@
+JWT_SECRET=supersecretkey
+JWT_EXPIRES_IN=1h
+
