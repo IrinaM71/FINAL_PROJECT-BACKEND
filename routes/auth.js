@@ -11,6 +11,7 @@ import dotenv from "dotenv";
 dotenv.config();
 const router = express.Router();
 
+// Маршрут для входа
 // Регистрация пользователя
 router.post("/register", async (req, res) => {
   const { username, email, password, fullName } = req.body;

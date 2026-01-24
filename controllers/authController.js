@@ -45,3 +45,20 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+//Авторизация
+export const authUser = async (registerUser, res) => {
+  try {
+    const { email, password } = req.body;
+    const errorMessage = { message: "Wron email or password" };
+    const user = await User.findOne({ email });
+    if (!User) {
+      return res.status(400).json(errorMessage);
+    }
+    const secret = process.env.SECRET;
+    const token = jwt.sign({ userId: user._id }, secret, { expiresIn: "1h" });
+    res.json({ token });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
