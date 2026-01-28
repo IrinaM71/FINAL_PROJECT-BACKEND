@@ -5,20 +5,20 @@ import {
   createUserProfile,
   deleteUser,
 } from "../controllers/userController.js";
-import { protect } from "../middleware/authMiddleware.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
+
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
 // Получение профиля текущего пользователя
-router.get("/:id", protect, getUserProfile);
+router.get("/:id", getUserProfile);
 
 // Обновление профиля текущего пользователя и загрузка аватара
 router.patch(
   "/me/update",
   authMiddleware,
   upload.single("avatar"),
-  protect,
+
   updateUserProfile,
 );
 

@@ -1,7 +1,3 @@
-//Контроллеры: Для регистрации проверим, существует ли пользователь с
-//таким email или username, хэшируем пароль и сохраняем пользователя. Для
-//логина проверим email и введенный пароль и сгенерируем токен.
-
 import User from "../../models/User.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";

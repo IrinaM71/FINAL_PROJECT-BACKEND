@@ -1,25 +1,23 @@
-//Для работы с постами создаётся контроллер postController.js, который будет
-//включать основные функции для выполнения операций с постами:
-//1. Получение всех постов пользователя: Позволяет вывести все посты,
-//созданные конкретным пользователем.
-//2. Создание поста: Принимает изображение, которое конвертируется в формат
-//Base64, и текстовое описание. Пост сохраняется в базе данных вместе с
-//ссылкой на автора.
-//3. Удаление поста: Удаляет пост по его ID, если пользователь является автором.
-//4. Получение конкретного поста по ID Возвращает информацию о посте,
-//включая описание и изображение.
-//5. Обновление поста: Позволяет изменить описание или изображение поста.
-//6. Получение всех постов: Возвращает список всех постов (например, для ленты
-//новостей).
-
 import Post from "../models/Post.js";
 
-// Получение всех постов пользователя
-export const getUserPosts = async (req, res) => {
+// Получение всех постов
+export const getAllPosts = async (req, res) => {
   try {
     const posts = await Post.find()
-    .populate("author", "username fullName avatar")
-    .sort({createdAt: -1});
+      .populate("author", "username fullName avatar")
+      .sort({ createdAt: -1 });
+
+    res.json(posts);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Получение всех постов конкретного пользователя
+export const getUserPost = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const posts = await Post.find({ author: userId }).sort({ createdAt: -1 });
 
     res.json(posts);
   } catch (error) {
@@ -29,11 +27,21 @@ export const getUserPosts = async (req, res) => {
 
 // Создание поста
 export const createPost = async (req, res) => {
-  const { image, description } = req.body;
   try {
-    const post = new Post({ author: req.user.id, image, description });
-    await post.save();
-    res.status(201).json(post);
+    const { description } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ message: "Image required" });
+    }
+    const base64Image = req.file.buffer.toString("base64");
+    const image = `data:${req.file.mimetype};base64,${base64Image}`;
+
+    const post = await Post.create({
+      author: req.user._id,
+      description,
+      image,
+    });
+    res.status(201).json({ message: "Post created" });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
@@ -46,10 +54,10 @@ export const deletePost = async (req, res) => {
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
-    if (post.author.toString() !== req.user.id) {
-      return res.status(401).json({ message: "Unauthorized" });
+    if (post.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "No permission to delete" });
     }
-    await post.remove();
+    await post.deleteOne();
     res.json({ message: "Post removed" });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -59,7 +67,10 @@ export const deletePost = async (req, res) => {
 // Получение конкретного поста по ID
 export const getPostById = async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findById(req.params.id).populate(
+      "author",
+      "username fullname avatar",
+    );
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
@@ -71,29 +82,24 @@ export const getPostById = async (req, res) => {
 
 // Обновление поста
 export const updatePost = async (req, res) => {
-  const { image, description } = req.body;
+  const { description } = req.body;
   try {
     const post = await Post.findById(req.params.id);
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
-    if (post.author.toString() !== req.user.id) {
-      return res.status(401).json({ message: "Unauthorized" });
+    if (post.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "No update reghts" });
     }
-    post.image = image || post.image;
-    post.description = description || post.description;
-    await post.save();
-    res.json(post);
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
+    if (description) post.description = description;
 
-// Получение всех постов
-export const getAllPosts = async (req, res) => {
-  try {
-    const posts = await Post.find().populate("author", "username fullName");
-    res.json(posts);
+    if (req.file) {
+      const base64Image = req.file.bufer.toString("base64");
+      post.image = `data:${req.file.mimetype};base64, ${base64Image}`;
+    }
+
+    await post.save();
+    res.json({ message: "Post updated" });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }

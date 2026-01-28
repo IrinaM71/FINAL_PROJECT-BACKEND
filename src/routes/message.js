@@ -1,5 +1,4 @@
 import express from "express";
-import router from "./search";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { getMessage, sendMessage } from "../controllers/messageController";
 

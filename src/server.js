@@ -7,6 +7,8 @@ import likeRoutes from "./routes/like.js";
 import commentRoutes from "./routes/comment.js";
 import searchRoutes from "./routes/search.js";
 import messageRoutes from "./routes/message.js";
+import followRoutes from "./routes/follow.js";
+import notificationRoutes from "./routes/notification.js";
 import http from "http";
 import { Server } from "socket.io";
 
@@ -20,7 +22,7 @@ app.use(express.json()); //для работы с JSON
 const server = http.createServer(app); // создали HTTP сервер
 
 // Настраиваем Socket.io
-const io = new ServiceWorkerRegistration(server, {
+const io = new Server(server, {
   cors: {
     origin: "*",
   },
@@ -57,6 +59,8 @@ app.use("/likes", likeRoutes);
 app.use("/comments", commentRoutes);
 app.use("/serch", searchRoutes);
 app.use("/messages", messageRoutes);
+app.use("/follow", followRoutes);
+app.use("/notifications", notificationRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

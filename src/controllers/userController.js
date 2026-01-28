@@ -1,19 +1,11 @@
 import User from "../../models/User";
 
-//Поиск всех пользователей
-export const getAllUsers = async (_req, res) => {
-  try {
-    const users = await User.find().select("-password");
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
 
 //Поиск пользователя по ID
-export const getUserById = async (req, res) => {
+export const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
+    const userId = req.params.id
+    const user = await User.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -27,33 +19,27 @@ export const getUserById = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user._id; // ID Берём из токена
-    const { fullName, bio} = req.body;
+    const { fullName, bio, avatar } = req.body;
 
-    const  updatedData = {};
-    
-   
-  if (fullName) updatedData.fullName = fullName;
-  if (bio) updatedData.bio = bio;
-  // Если загружен файл, преобразуем в Base64
-  if (req.file) {
-    const Base64Image = req.file.buffer.toString("base64");
-    updatedData.avatar = `data:${req.file.mimetype}, base64, ${Base64Image}`;
-  }
- 
+    const updatedData = {};
 
+    if (fullName) updatedData.fullName = fullName;
+    if (bio) updatedData.bio = bio;
+    if (avatar) updatedData.avatar = avatar; // Base64 строка
 
-  const updatedUser = await User.findByIdAndUpdate(
-    userId,
-    updatedData,
+    const updatedUser = await User.findByIdAndUpdate(
+    userId, 
+    updatedData, 
     {new: true}
-  ).select("-password");
+      
+    ).select("-password");
 
-  res.json({
-    message: "Profile updated",
-    user: updatedUser
-  });
-} catch (error) {
-    res.status(500).json({message: "Error server", error})
+    res.json({
+      message: "Profile updated",
+      user: updatedUser,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error server", error });
   }
 };
 
@@ -62,7 +48,7 @@ export const deleteUser = async (req, res) => {
   try {
     const userId = req.user._id;
     await User.findByIdAndDelete(userId);
-   
+
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -70,20 +56,22 @@ export const deleteUser = async (req, res) => {
 };
 
 // Добавление нового полбзователя
-export const createUser = async(req, res) => {
+export const createUser = async (req, res) => {
   try {
-    const {username, fullName, email, password, bio, avatar} = req.body:
+    const { username, fullName, email, password, bio, avatar } = req.body;
 
     // проверяем уникальность email и пароль
-    const existingEmail = await User.findOne({email});
-    const existingUsername = await User.findOne({username});
+    const existingEmail = await User.findOne({ email });
+    const existingUsername = await User.findOne({ username });
 
     if (existingEmail || existingUsername) {
-      return res.status(400).json({message: "Email or username already exists"})
+      return res
+        .status(400)
+        .json({ message: "Email or username already exists" });
     }
 
     // Создаём пользователя
-    const user =await User.create({
+    const user = await User.create({
       username,
       fullName,
       email,
@@ -94,16 +82,16 @@ export const createUser = async(req, res) => {
 
     res.status(201).json({
       message: "User created successfully",
-    user: {
-      id: user._id,
-      username: user.username,
-      fullName: user.fullName,
-      email: user.email,
-      bio: user.bio,
-      avatar: user.avatar,
-    },
+      user: {
+        id: user._id,
+        username: user.username,
+        fullName: user.fullName,
+        email: user.email,
+        bio: user.bio,
+        avatar: user.avatar,
+      },
     });
   } catch (error) {
-    res.status(500).json({message: "Server error", error});
+    res.status(500).json({ message: "Server error", error });
   }
 };

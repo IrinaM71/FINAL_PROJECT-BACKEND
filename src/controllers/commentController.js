@@ -1,6 +1,3 @@
-//Контролллеры комментариев обрабатывают операции, связанные с созданием, получением,
-//обновлением и удалением комментариев к постам. Вот основные функции, которые обычно
-//включаются в commentController.js:
 import Comment from "../models/Comment.js";
 
 // Создание комментария
@@ -24,8 +21,8 @@ export const getPostComments = async (req, res) => {
   try {
     const postId = req.params.postId;
     const comments = await Comment.find({ post: postId })
-    .populate("user", "username fullName avatar")
-    .sort({createdAt: -1});
+      .populate("user", "username fullName avatar")
+      .sort({ createdAt: -1 });
     res.json(comments);
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
@@ -83,11 +80,11 @@ export const addComment = async (req, res) => {
   try {
     const userId = req.user._id;
     const postId = req.params.postId;
-    const {text} = req.body;
+    const { text } = req.body;
 
     if (!text) {
-      return res.status(400).json({message: "The comment cannot be empty"})
-    } 
+      return res.status(400).json({ message: "The comment cannot be empty" });
+    }
 
     const commet = await Comment.create({
       user: userId,
@@ -95,8 +92,16 @@ export const addComment = async (req, res) => {
       text,
     });
 
-    res.status(201).json({message: "Comment added", commet});
+    res.status(201).json({ message: "Comment added", commet });
   } catch (error) {
-    res. status(500).json({message: "Server error", error})
+    res.status(500).json({ message: "Server error", error });
   }
 };
+
+// Уведомление при коментарии
+await Notification.create({
+  recipient: post.autor,
+  sender: userId,
+  type: "comment",
+  postId,
+});
