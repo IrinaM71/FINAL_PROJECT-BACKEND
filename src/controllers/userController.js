@@ -15,7 +15,7 @@ export const getUserProfile = async (req, res) => {
 };
 
 //Обновление информации пользователя
-export const updateProfile = async (req, res) => {
+export const updateUserProfile = async (req, res) => {
   try {
     const userId = req.user._id; // ID Берём из токена
     const { fullName, bio, avatar } = req.body;
@@ -52,7 +52,7 @@ export const deleteUser = async (req, res) => {
 };
 
 // Добавление нового полбзователя
-export const createUser = async (req, res) => {
+export const createUserProfile = async (req, res) => {
   try {
     const { username, fullName, email, password, bio, avatar } = req.body;
 

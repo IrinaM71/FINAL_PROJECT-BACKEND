@@ -9,6 +9,7 @@ import {
 } from "../controllers/postController.js";
 
 import { authMiddleware } from "../middlewares/authMiddleware.js";
+import { upload } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -28,3 +29,5 @@ router.get("/:id", getPostById);
 
 // Обновление поста
 router.patch("/:id", authMiddleware, upload.single("image"), updatePost);
+
+export default router;

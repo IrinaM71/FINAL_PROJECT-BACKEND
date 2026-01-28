@@ -18,9 +18,9 @@ export const toggleLike = async (req, res) => {
 
     // Уведомление при лайке
     const post = await Post.findById(postId);
-    if (post && post.autor.toString() !== userId.toString()) {
+    if (post && post.author.toString() !== userId.toString()) {
       await Notification.create({
-        recipient: post.autor,
+        recipient: post.author,
         sender: userId,
         type: "like",
         postId,

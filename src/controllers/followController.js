@@ -1,6 +1,7 @@
 import Follow from "../models/followModel.js";
+import Notification from "../models/notificationModel.js";
 
-//Подписка не пользователя
+// Подписка на пользователя
 export const followUser = async (req, res) => {
   try {
     const followerId = req.user._id;
@@ -9,13 +10,14 @@ export const followUser = async (req, res) => {
     if (followerId.toString() === followingId) {
       return res
         .status(400)
-        .json({ message: "You can't not subscribe to yourself" });
+        .json({ message: "You can't subscribe to yourself" });
     }
 
     const existingFollow = await Follow.findOne({
       follower: followerId,
       following: followingId,
     });
+
     if (existingFollow) {
       return res.status(400).json({ message: "You are already subscribed" });
     }
@@ -24,6 +26,15 @@ export const followUser = async (req, res) => {
       follower: followerId,
       following: followingId,
     });
+
+    // Уведомление о подписке
+    await Notification.create({
+      recipient: followingId,
+      sender: followerId,
+      type: "follow",
+    });
+
+    res.json({ message: "You subscribed" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
@@ -55,9 +66,10 @@ export const unfollowUser = async (req, res) => {
 export const getFollowers = async (req, res) => {
   try {
     const userId = req.params.userId;
+
     const followers = await Follow.find({ following: userId }).populate(
       "follower",
-      "usrname FullName avatar",
+      "username fullName avatar",
     );
 
     res.json(followers);
@@ -66,10 +78,11 @@ export const getFollowers = async (req, res) => {
   }
 };
 
-// Получение подрисок пользователя
+// Получение подписок пользователя
 export const getFollowing = async (req, res) => {
   try {
-    const userId = registerUser.params.userId;
+    const userId = req.params.userId;
+
     const following = await Follow.find({ follower: userId }).populate(
       "following",
       "username fullName avatar",
@@ -77,13 +90,6 @@ export const getFollowing = async (req, res) => {
 
     res.json(following);
   } catch (error) {
-    res.status(500).json({ message: " Server error", error });
+    res.status(500).json({ message: "Server error", error });
   }
 };
-
-// Уведомление при подписке
-await Notification.create({
-  recipient: followingId,
-  sender: followerId,
-  type: "follow",
-});

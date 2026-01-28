@@ -4,7 +4,7 @@ import Post from "../models/postModel.js";
 export const getAllPosts = async (req, res) => {
   try {
     const posts = await Post.find()
-      .populate("author", "username fullName avatar")
+      .populate("author", "userName fullName avatar")
       .sort({ createdAt: -1 });
 
     res.json(posts);
@@ -14,7 +14,7 @@ export const getAllPosts = async (req, res) => {
 };
 
 // Получение всех постов конкретного пользователя
-export const getUserPost = async (req, res) => {
+export const getUserPosts = async (req, res) => {
   try {
     const userId = req.params.userId;
     const posts = await Post.find({ author: userId }).sort({ createdAt: -1 });
@@ -94,7 +94,7 @@ export const updatePost = async (req, res) => {
     if (description) post.description = description;
 
     if (req.file) {
-      const base64Image = req.file.bufer.toString("base64");
+      const base64Image = req.file.buffer.toString("base64");
       post.image = `data:${req.file.mimetype};base64, ${base64Image}`;
     }
 

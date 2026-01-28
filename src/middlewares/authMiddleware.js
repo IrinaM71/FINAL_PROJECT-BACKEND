@@ -25,7 +25,7 @@ export const authMiddleware = async (req, res, next) => {
 // Сохраняем в памяти
 export const storage = multer.memoryStorage();
 
-const upload = multer({
+export const upload = multer({
   storage,
   limits: { fieldSize: 5 * 1024 * 1024 }, // ограничение 5МВ
 });

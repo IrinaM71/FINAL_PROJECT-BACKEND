@@ -7,6 +7,7 @@ import {
 } from "../controllers/userController.js";
 
 import { authMiddleware } from "../middlewares/authMiddleware.js";
+import { upload } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -18,7 +19,6 @@ router.patch(
   "/me/update",
   authMiddleware,
   upload.single("avatar"),
-
   updateUserProfile,
 );
 
