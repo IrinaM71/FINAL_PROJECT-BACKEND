@@ -1,6 +1,6 @@
-import Like from "../models/likeModel";
-import Notification from "../models/notificationModel";
-import Post from "../models/postModel";
+import Like from "../models/likeModel.js";
+import Notification from "../models/notificationModel.js";
+import Post from "../models/postModel.js";
 
 // Добавить или убрать лайк
 export const toggleLike = async (req, res) => {

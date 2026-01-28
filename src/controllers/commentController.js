@@ -1,107 +1,127 @@
-import Comment from "../models/Comment.js";
+import Comment from "../models/commentModel.js";
+import Post from "../models/postModel.js";
+import Notification from "../models/notificationModel.js";
 
-// Создание комментария
+// Создать комментарий
 export const createComment = async (req, res) => {
-  const { postId, content } = req.body;
   try {
-    const comment = new Comment({
-      post: postId,
-      content: content,
-      author: req.user.id,
-    });
-    await comment.save();
-    res.status(201).json(comment);
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Получение комментариев для поста
-export const getPostComments = async (req, res) => {
-  try {
+    const { content } = req.body;
     const postId = req.params.postId;
-    const comments = await Comment.find({ post: postId })
-      .populate("user", "username fullName avatar")
-      .sort({ createdAt: -1 });
-    res.json(comments);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
-};
-
-// Обновление комментария
-export const updateComment = async (req, res) => {
-  const { content } = req.body;
-  try {
-    const comment = await Comment.findById(req.params.id);
-    if (!comment) {
-      return res.status(404).json({ message: "Comment not found" });
-    }
-    if (comment.author.toString() !== req.user.id) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    comment.content = content || comment.content;
-    await comment.save();
-    res.json(comment);
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Удаление комментария
-export const deleteComment = async (req, res) => {
-  try {
-    const comment = await Comment.findById(req.params.id);
-    if (!comment) {
-      return res.status(404).json({ message: "Comment not found" });
-    }
-    if (comment.author.toString() !== req.user.id) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    await comment.remove();
-    res.json({ message: "Comment deleted" });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Получение всех комментариев
-export const getAllComments = async (req, res) => {
-  try {
-    const comments = await Comment.find().populate("author", "username");
-    res.json(comments);
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Добавить комментарий
-export const addComment = async (req, res) => {
-  try {
     const userId = req.user._id;
-    const postId = req.params.postId;
-    const { text } = req.body;
 
-    if (!text) {
+    if (!content || content.trim() === "") {
       return res.status(400).json({ message: "The comment cannot be empty" });
     }
 
-    const commet = await Comment.create({
-      user: userId,
+    // Проверяем, существует ли пост
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Создаём комментарий
+    const comment = await Comment.create({
       post: postId,
-      text,
+      author: userId,
+      content,
     });
 
-    res.status(201).json({ message: "Comment added", commet });
+    // Создаём уведомление, если автор поста — не тот же пользователь
+    if (post.author.toString() !== userId.toString()) {
+      await Notification.create({
+        recipient: post.author,
+        sender: userId,
+        type: "comment",
+        postId,
+        commentId: comment._id,
+      });
+    }
+
+    res.status(201).json(comment);
   } catch (error) {
+    console.error("Create comment error:", error);
     res.status(500).json({ message: "Server error", error });
   }
 };
 
-// Уведомление при коментарии
-await Notification.create({
-  recipient: post.autor,
-  sender: userId,
-  type: "comment",
-  postId,
-});
+// Получить комментарии поста
+export const getPostComments = async (req, res) => {
+  try {
+    const postId = req.params.postId;
+
+    const comments = await Comment.find({ post: postId })
+      .populate("author", "username fullname avatar")
+      .sort({ createdAt: -1 });
+
+    res.json(comments);
+  } catch (error) {
+    console.error("Get comments error:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Обновить комментарий
+export const updateComment = async (req, res) => {
+  try {
+    const { content } = req.body;
+    const commentId = req.params.id;
+    const userId = req.user._id;
+
+    const comment = await Comment.findById(commentId);
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    if (comment.author.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "No rights to edit" });
+    }
+
+    comment.content = content || comment.content;
+    await comment.save();
+
+    res.json(comment);
+  } catch (error) {
+    console.error("Update comment error:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Удалить комментарий
+export const deleteComment = async (req, res) => {
+  try {
+    const commentId = req.params.id;
+    const userId = req.user._id;
+
+    const comment = await Comment.findById(commentId);
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    if (comment.author.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "No permission to delete" });
+    }
+
+    await comment.deleteOne();
+
+    res.json({ message: "Comment deleted" });
+  } catch (error) {
+    console.error("Delete comment error:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Получить все комментарии (например, для админки)
+export const getAllComments = async (req, res) => {
+  try {
+    const comments = await Comment.find()
+      .populate("author", "username fullname avatar")
+      .populate("post", "title");
+
+    res.json(comments);
+  } catch (error) {
+    console.error("Get all comments error:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};

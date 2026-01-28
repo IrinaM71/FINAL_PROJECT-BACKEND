@@ -1,10 +1,10 @@
 import express from "express";
-import { authMiddleware } from "../middlewares/authMiddleware";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 import {
   addComment,
   deleteComment,
   getPostComments,
-} from "../controllers/commentController";
+} from "../controllers/commentController.js";
 
 const router = express.Router();
 

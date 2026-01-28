@@ -1,5 +1,5 @@
-import User from "../models/User";
-import Post from "../models/postModel";
+import User from "../models/User.js";
+import Post from "../models/postModel.js";
 
 //Поиск пользователей по username или имени
 export const searchUser = async (req, res) => {

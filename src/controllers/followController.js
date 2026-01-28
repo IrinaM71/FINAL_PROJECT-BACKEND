@@ -1,4 +1,4 @@
-import Follow from "../models/followModel";
+import Follow from "../models/followModel.js";
 
 //Подписка не пользователя
 export const followUser = async (req, res) => {

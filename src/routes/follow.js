@@ -1,11 +1,11 @@
 import express from "express";
-import { authMiddleware } from "../middlewares/authMiddleware";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 import {
   followUser,
   getFollowers,
   getFollowing,
   unfollowUser,
-} from "../controllers/followController";
+} from "../controllers/followController.js";
 
 const router = express.Router();
 
