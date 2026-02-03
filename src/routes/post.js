@@ -6,6 +6,7 @@ import {
   getPostById,
   updatePost,
   getAllPosts,
+  getFeed, // если есть отдельный контроллер
 } from "../controllers/postController.js";
 
 import { authMiddleware } from "../middlewares/authMiddleware.js";
@@ -13,8 +14,12 @@ import { upload } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
+// Лента (feed)
+router.get("/feed", getFeed);
+
 // Получение всех постов
 router.get("/", getAllPosts);
+
 // Получение всех постов пользователя
 router.get("/user/:userId", getUserPosts);
 

@@ -1,6 +1,11 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
+import http from "http";
+import { Server } from "socket.io";
+
 import connectDB from "./config/db.js";
+
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/userRoutes.js";
 import postRoutes from "./routes/post.js";
@@ -10,35 +15,48 @@ import searchRoutes from "./routes/search.js";
 import messageRoutes from "./routes/message.js";
 import followRoutes from "./routes/follow.js";
 import notificationRoutes from "./routes/notification.js";
-import http from "http";
-import { Server } from "socket.io";
 
-const app = express();
 dotenv.config();
 
-// Connect to MongoDB
+const app = express();
 connectDB();
 
-app.use(express.json()); //для работы с JSON
-const server = http.createServer(app); // создали HTTP сервер
+// CORS (ОБЯЗАТЕЛЬНО ДО РОУТОВ)
 
-// Настраиваем Socket.io
+app.use(
+  cors({
+    origin: "http://localhost:5174",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+
+// Чтобы Express умел читать JSON
+app.use(express.json());
+
+// HTTP + Socket.IO
+
+const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "http://localhost:5174",
+    methods: ["GET", "POST"],
   },
 });
-// События Socket.io
+
+// Socket.IO events
+
 io.on("connection", (socket) => {
-  console.log("The user has connected:", socket.id);
+  console.log("User connected:", socket.id);
 
   // Подключение к комнате
   socket.on("joinRoom", ({ roomId }) => {
-    socket.json(roomId);
+    socket.join(roomId);
     console.log(`User ${socket.id} joined room ${roomId}`);
   });
 
-  //Отправка сообщения
+  // Отправка сообщения
   socket.on("message", ({ roomId, message }) => {
     io.to(roomId).emit("message", {
       sender: socket.id,
@@ -51,20 +69,26 @@ io.on("connection", (socket) => {
   });
 });
 
+// API Routes
+
 app.get("/", (_req, res) => {
   res.send("API is connected");
 });
+
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
-app.use("/post", postRoutes);
+app.use("/posts", postRoutes);
 app.use("/likes", likeRoutes);
 app.use("/comments", commentRoutes);
-app.use("/serch", searchRoutes);
+app.use("/search", searchRoutes); // исправлено /serch → /search
 app.use("/messages", messageRoutes);
 app.use("/follow", followRoutes);
 app.use("/notifications", notificationRoutes);
 
+// Start server
+
 const PORT = process.env.PORT || 5000;
+
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
