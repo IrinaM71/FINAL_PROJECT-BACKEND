@@ -1,10 +1,5 @@
 import Post from "../models/postModel.js";
 
-
-
--
-// FEED — все посты (лента)
-
 export const getFeed = async (_req, res) => {
   try {
     const posts = await Post.find()
@@ -22,7 +17,7 @@ export const getFeed = async (_req, res) => {
   }
 };
 
-export const getAllPosts = async (req, res) => {
+export const getAllPosts = async (_req, res) => {
   try {
     const posts = await Post.find()
       .populate("author", "username fullName avatar")
@@ -39,16 +34,10 @@ export const getAllPosts = async (req, res) => {
   }
 };
 
-
-
-// Все посты конкретного пользователя
-
 export const getUserPosts = async (req, res) => {
   try {
-    const userId = req.params.userId;
-
-    const posts = await Post.find({ author: userId })
-      .populate("author", "username fullname avatar")
+    const posts = await Post.find({ author: req.params.userId })
+      .populate("author", "username fullName avatar")
       .populate({
         path: "comments",
         populate: { path: "author", select: "username avatar" },
@@ -62,13 +51,8 @@ export const getUserPosts = async (req, res) => {
   }
 };
 
-
-// Создание поста
-
 export const createPost = async (req, res) => {
   try {
-    const { text } = req.body;
-
     if (!req.file) {
       return res.status(400).json({ message: "Image required" });
     }
@@ -78,7 +62,7 @@ export const createPost = async (req, res) => {
 
     const post = await Post.create({
       author: req.user._id,
-      text,
+      text: req.body.text,
       image,
     });
 
@@ -89,21 +73,16 @@ export const createPost = async (req, res) => {
   }
 };
 
-
-// Получение поста по ID
-
 export const getPostById = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id)
-      .populate("author", "username fullname avatar")
+      .populate("author", "username fullName avatar")
       .populate({
         path: "comments",
         populate: { path: "author", select: "username avatar" },
       });
 
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
+    if (!post) return res.status(404).json({ message: "Post not found" });
 
     res.json(post);
   } catch (error) {
@@ -112,16 +91,11 @@ export const getPostById = async (req, res) => {
   }
 };
 
-
-// Удаление поста
-
 export const deletePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
 
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
+    if (!post) return res.status(404).json({ message: "Post not found" });
 
     if (post.author.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "No permission to delete" });
@@ -135,24 +109,17 @@ export const deletePost = async (req, res) => {
   }
 };
 
-
-// Обновление поста
-
 export const updatePost = async (req, res) => {
   try {
-    const { text } = req.body;
-
     const post = await Post.findById(req.params.id);
 
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
+    if (!post) return res.status(404).json({ message: "Post not found" });
 
     if (post.author.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "No update rights" });
     }
 
-    if (text) post.text = text;
+    if (req.body.text) post.text = req.body.text;
 
     if (req.file) {
       const base64Image = req.file.buffer.toString("base64");

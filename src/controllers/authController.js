@@ -1,13 +1,9 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import dotenv from "dotenv";
 
-
-dotenv.config();
-
-// Генерация JWT
+// Генерация токена
 const generateToken = (userId) => {
-  return jwt.sign({ id: userId }, process.abort.env.JWT_SECRET, {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: "1d",
   });
 };
@@ -17,6 +13,12 @@ export const registerUser = async (req, res) => {
   try {
     const { username, email, password, fullName } = req.body;
 
+    // Проверка обязательных полей
+    if (!username || !email || !password || !fullName) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Проверка существующего email или username
     const existingUser = await User.findOne({ email });
     const existingUsername = await User.findOne({ username });
 
@@ -24,7 +26,7 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Создаём пользователя
+    // Создание пользователя (пароль хэшируется в pre-save)
     const user = await User.create({
       username,
       fullName,
@@ -43,7 +45,8 @@ export const registerUser = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    console.error("REGISTER ERROR:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -52,12 +55,12 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Проверяем email
+    // Проверка email
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid email" });
 
-    //Проверяем пароль
-    const isMatch = await user.comparePassword(password);
+    // Проверка пароля
+    const isMatch = await user.matchPassword(password);
     if (!isMatch) return res.status(400).json({ message: "Invalid password" });
 
     res.json({
@@ -71,6 +74,11 @@ export const loginUser = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    console.error("LOGIN ERROR:", error);
+    res.status(500).json({ message: "Server error" });
   }
+};
+
+export const getMe = async (req, res) => {
+  res.json(req.user);
 };

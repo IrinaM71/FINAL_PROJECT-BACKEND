@@ -6,7 +6,7 @@ import {
   getPostById,
   updatePost,
   getAllPosts,
-  getFeed, // если есть отдельный контроллер
+  getFeed,
 } from "../controllers/postController.js";
 
 import { authMiddleware } from "../middlewares/authMiddleware.js";
