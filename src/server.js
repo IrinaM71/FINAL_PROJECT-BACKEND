@@ -21,18 +21,19 @@ dotenv.config();
 const app = express();
 connectDB();
 
-// CORS (ОБЯЗАТЕЛЬНО ДО РОУТОВ)
+// CORS — единая политика для API и Socket.IO
 
 app.use(
   cors({
-    origin: "http://localhost:5174",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    origin: true, // автоматически подставляет Origin клиента
+    credentials: true,
   }),
 );
 
-// Чтобы Express умел читать JSON
+// JSON body parser — обязательно ДО роутов
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // HTTP + Socket.IO
 
@@ -40,8 +41,8 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5174",
-    methods: ["GET", "POST"],
+    origin: true, // то же самое, что и у Express
+    credentials: true,
   },
 });
 
@@ -50,13 +51,11 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  // Подключение к комнате
   socket.on("joinRoom", ({ roomId }) => {
     socket.join(roomId);
     console.log(`User ${socket.id} joined room ${roomId}`);
   });
 
-  // Отправка сообщения
   socket.on("message", ({ roomId, message }) => {
     io.to(roomId).emit("message", {
       sender: socket.id,
@@ -80,13 +79,12 @@ app.use("/users", userRoutes);
 app.use("/posts", postRoutes);
 app.use("/likes", likeRoutes);
 app.use("/comments", commentRoutes);
-app.use("/search", searchRoutes); // исправлено /serch → /search
+app.use("/search", searchRoutes);
 app.use("/messages", messageRoutes);
 app.use("/follow", followRoutes);
 app.use("/notifications", notificationRoutes);
 
 // Start server
-
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {

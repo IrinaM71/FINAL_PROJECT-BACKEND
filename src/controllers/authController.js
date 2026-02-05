@@ -8,25 +8,32 @@ const generateToken = (userId) => {
   });
 };
 
-// Регистрация пользователя
+//  РЕГИСТРАЦИЯ
+
 export const registerUser = async (req, res) => {
   try {
+    console.log("REGISTER BODY RAW:", req.body);
+    console.log("username:", req.body.username);
+    console.log("fullName:", req.body.fullName);
+    console.log("email:", req.body.email);
+    console.log("password:", req.body.password);
+
     const { username, email, password, fullName } = req.body;
 
-    // Проверка обязательных полей
     if (!username || !email || !password || !fullName) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
     // Проверка существующего email или username
-    const existingUser = await User.findOne({ email });
-    const existingUsername = await User.findOne({ username });
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }],
+    });
 
-    if (existingUser || existingUsername) {
+    if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Создание пользователя (пароль хэшируется в pre-save)
+    // Создание пользователя
     const user = await User.create({
       username,
       fullName,
@@ -35,7 +42,7 @@ export const registerUser = async (req, res) => {
     });
 
     res.status(201).json({
-      message: "Registration was successful",
+      message: "Registration successful",
       token: generateToken(user._id),
       user: {
         id: user._id,
@@ -50,21 +57,34 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// Логин пользователя
+//  ЛОГИН (email ИЛИ username)
+
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { identifier, password } = req.body;
+    console.log("LOGIN BODY:", req.body);
 
-    // Проверка email
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid email" });
+    if (!identifier || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Ищем по email ИЛИ username
+    const user = await User.findOne({
+      $or: [{ email: identifier }, { username: identifier }],
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid username/email" });
+    }
 
     // Проверка пароля
     const isMatch = await user.matchPassword(password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid password" });
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid password" });
+    }
 
     res.json({
-      message: "Successful login",
+      message: "Login successful",
       token: generateToken(user._id),
       user: {
         id: user._id,
@@ -78,6 +98,8 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+//ПОЛУЧЕНИЕ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ
 
 export const getMe = async (req, res) => {
   res.json(req.user);
