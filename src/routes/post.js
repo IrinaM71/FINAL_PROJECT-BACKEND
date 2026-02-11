@@ -10,29 +10,35 @@ import {
 } from "../controllers/postController.js";
 
 import { authMiddleware } from "../middlewares/authMiddleware.js";
-import { upload } from "../middlewares/authMiddleware.js";
+import { upload } from "../middlewares/uploadMiddleware.js";
+import { toggleLike } from "../controllers/likeController.js";
 
 const router = express.Router();
 
-// Лента (feed)
+// Лента
 router.get("/feed", getFeed);
 
-// Получение всех постов
+// Все посты
 router.get("/", getAllPosts);
 
-// Получение всех постов пользователя
+// Посты пользователя
 router.get("/user/:userId", getUserPosts);
+
+// Лайки
+router.post("/:id/like", toggleLike);
+
+// router.post("/:id/comment", addComment);
 
 // Создание поста
 router.post("/create", authMiddleware, upload.single("image"), createPost);
 
-// Удаление поста
+// Удаление
 router.delete("/:id", authMiddleware, deletePost);
 
-// Получение конкретного поста по ID
+// Получение по ID
 router.get("/:id", getPostById);
 
-// Обновление поста
+// Обновление
 router.patch("/:id", authMiddleware, upload.single("image"), updatePost);
 
 export default router;

@@ -8,13 +8,18 @@ const postSchema = new mongoose.Schema(
       required: true,
     },
 
-    text: {
+    title: {
+      type: String,
+      required: true,
+    },
+
+    description: {
       type: String,
       default: "",
     },
 
     image: {
-      type: String,
+      type: String, // тут будет путь/имя файла
       required: true,
     },
 

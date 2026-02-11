@@ -53,17 +53,19 @@ export const getUserPosts = async (req, res) => {
 
 export const createPost = async (req, res) => {
   try {
+    const { title, description } = req.body;
+
     if (!req.file) {
       return res.status(400).json({ message: "Image required" });
     }
 
-    const base64Image = req.file.buffer.toString("base64");
-    const image = `data:${req.file.mimetype};base64,${base64Image}`;
+    const imagePath = `/uploads/${req.file.filename}`;
 
     const post = await Post.create({
       author: req.user._id,
-      text: req.body.text,
-      image,
+      title,
+      description,
+      image: imagePath,
     });
 
     res.status(201).json(post);

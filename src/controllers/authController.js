@@ -8,23 +8,27 @@ const generateToken = (userId) => {
   });
 };
 
-//  РЕГИСТРАЦИЯ
+// =========================
+//      РЕГИСТРАЦИЯ
+// =========================
 
 export const registerUser = async (req, res) => {
   try {
-    console.log("REGISTER BODY RAW:", req.body);
-    console.log("username:", req.body.username);
-    console.log("fullName:", req.body.fullName);
-    console.log("email:", req.body.email);
-    console.log("password:", req.body.password);
-
     const { username, email, password, fullName } = req.body;
 
+    console.log("REGISTER BODY:", req.body);
+
+    // Проверка обязательных полей
     if (!username || !email || !password || !fullName) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Проверка существующего email или username
+    if (!password || typeof password !== "string") {
+      console.log("INVALID PASSWORD VALUE:", password);
+      return res.status(400).json({ message: "Password is required" });
+    }
+
+    // Проверка существующего пользователя
     const existingUser = await User.findOne({
       $or: [{ email }, { username }],
     });
@@ -33,15 +37,17 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Создание пользователя
-    const user = await User.create({
+    // Создание пользователя (важно: через new User)
+    const user = new User({
       username,
       fullName,
       email,
-      password,
+      password: String(password), // гарантируем строку
     });
 
-    res.status(201).json({
+    await user.save(); // запускает pre-save hook (bcrypt)
+
+    return res.status(201).json({
       message: "Registration successful",
       token: generateToken(user._id),
       user: {
@@ -53,15 +59,31 @@ export const registerUser = async (req, res) => {
     });
   } catch (error) {
     console.error("REGISTER ERROR:", error);
-    res.status(500).json({ message: "Server error" });
+
+    // Ошибка уникальности email/username
+    if (error.code === 11000) {
+      return res
+        .status(400)
+        .json({ message: "Email or username already exists" });
+    }
+
+    // Ошибка валидации Mongoose
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    }
+
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
-//  ЛОГИН (email ИЛИ username)
+// =========================
+//          ЛОГИН
+// =========================
 
 export const loginUser = async (req, res) => {
   try {
     const { identifier, password } = req.body;
+
     console.log("LOGIN BODY:", req.body);
 
     if (!identifier || !password) {
@@ -79,11 +101,12 @@ export const loginUser = async (req, res) => {
 
     // Проверка пароля
     const isMatch = await user.matchPassword(password);
+
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid password" });
     }
 
-    res.json({
+    return res.json({
       message: "Login successful",
       token: generateToken(user._id),
       user: {
@@ -95,12 +118,14 @@ export const loginUser = async (req, res) => {
     });
   } catch (error) {
     console.error("LOGIN ERROR:", error);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
-//ПОЛУЧЕНИЕ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ
+// =========================
+//     ТЕКУЩИЙ ПОЛЬЗОВАТЕЛЬ
+// =========================
 
 export const getMe = async (req, res) => {
-  res.json(req.user);
+  return res.json(req.user);
 };
